@@ -1,16 +1,46 @@
+os: linux
+dist: bionic
+
 language: ruby
-rvm:
-- 2.6.3
+rvm: 2.6.5
+
+before_install:
+  - bundle config path 'vendor/bundle'
+
 install:
-- bundle install
-script: bundle exec rake site:deploy --quiet
+  - bundle install --quiet
+
+addons:
+  apt:
+    sources:
+      - sourceline: "ppa:rmescandon/yq"
+    packages:
+      - libcurl4-openssl-dev # required to avoid SSL error (for htmlproofer)
+      - yq
+
+script:
+  - >-
+    git clone https://${GH_PAT}@github.com/${GH_USER}/${BUILDER_REPO}.git
+    ${HOME}/${BUILDER_REPO} --depth=1 -q
+  - cp -r ${HOME}/${BUILDER_REPO}/framework/* .
+  - bash _cibuild.sh
+
+branches:
+  only: production
+
+git:
+  depth: false # for posts lastmod
+
+cache:
+  directories:
+    - $TRAVIS_BUILD_DIR/vendor/bundle
+
+notifications:
+  email:
+    recipients:
+      - secure: "fFLqX7uOzFA8RE2AUFlU1mmxMw+rdV6DnODJ/1Gl+3ecNtrv5LeH3c5a4a5ShQqYTrx9BPfD40VRN7UB+lzOdXiWLI9yDGRPPxGG26/WfrKpdQPZilc8zAOEeDnLAJeGZLsUvgmNb3KCXW6S8NPqqh34CfWcTIzjCARhRgO33wcs8X5wP5cugtNqO5Ew/pUcfWcmiuXNX0GNT6l+nL5A7yN+IO5mRHqSRmlfYd5EHhGMTIL4La+Cd1CNv1m4Dl0Ah2cDeJwi5wLnVbqAgunLhAYmDtxIOCVYMTBrP37UiNe/7QeFelyJfODsmMg1mx3WCykbXydC753WVoAlTg6nNoeeI9fmK+/tuLK+sx/KnYfTVGBXQYq39DyV/2o/IfCzEAKImlzFKGD8R13+ddu4B5UML+cby5KBvhTKIGaC5tKoe39z/31UPpy11/EHMCof2BUOzIgu5Hsv4OSNJlw3oRE31oOPn8xP4e7uWR8bRUhAgzN0Cn0ht+UfpemfGAXrp0M3IXQdc9L4azEFqxRhivMTLK/P6INay7IM+DJ30Ht2dWylGw/sxcRTqyNm3YomJQnXIO4xeqTSLulWr80FFHTys3JEDJYrcKvJmpwLFEAOZtwKsZ6ZShrOIA4LE5fgQtakH3ZLJG9a7jVSlMcNIfaSKgjdDQOe6CoRQL7KouA="
+    on_success: never
+
 env:
   global:
-  - NOKOGIRI_USE_SYSTEM_LIBRARIES=true
-  - secure: EnLh3Uw6/5vHeEZHSsMT6p5HKGrsvZS42iJ8QEF2iwlOi+yE1zAJJ3ajBm6DnJivHkx/ejGFNyKuchzFImmaCW/VFN8HtjVpAKYohJ24L1MqePJebak5PZBmnW5yyQDhoHxOUs+PK65EX4D7RQ+6zYVfqcdITPDifxPPrsMwwC1yrfGB1cLSKfNOkU61rPix0fjXzK2Kh9cagIbb4NqUSJvvvuH3ZGuKK0/cK0pKoxVWGdglDPjnqz3mWtDg/OZWccREWVHsvPHwJNtE+23e6FLJLsjcQmC88LKzr3AdMVRe8iJOCR3hVJENvTvbS0kIf7Kj061fURh0pqpDGFM2Cg2a1dOra23US0aGM1FfhasmWJ2VuWUGB60LRUys1b895tkom8kx3l7TTu4XdIfIfwaqomdUzDIhDJQeep7mAYShIgJyFVWZ8mkdKmrXUxHS0KeYsl7bUBf7lhesHxcVgtMdXWBEkHrJzhueS+Avp4ePAcz+G4qqhSpdyhIChpW2C09Pt1lF8jMtajig8sOBIY4FElnVMjJC7GaCWEPiLsKSpjT4xFQ0fw06+CC83mTKpwFykARKvRSzBPZrSNNNm+Rxfa3g/Pusiw+SebDHj0c67ilRBcuuHa6ORPG35KkFaXYQjihnWHJyI+KVqwmRn1J1m+q0F12do5nx6Suhb1k=
-sudo: false
-exclude:
-- vendor
-branches:
-  only:
-  - master
+    - NOKOGIRI_USE_SYSTEM_LIBRARIES=true # speeds up installation of html-proofer
